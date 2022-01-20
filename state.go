@@ -19,7 +19,7 @@ func setupState(spec *common.Spec, state common.BeaconState, eth1Time common.Tim
 	var forkVersion common.Version
 	switch state.(type) {
 	case *merge.BeaconStateView:
-		forkVersion = spec.MERGE_FORK_VERSION
+		forkVersion = spec.BELLATRIX_FORK_VERSION
 	case *altair.BeaconStateView:
 		forkVersion = spec.ALTAIR_FORK_VERSION
 	default:
