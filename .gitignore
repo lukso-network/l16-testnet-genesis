@@ -24,3 +24,10 @@ genesis.ssz
 venv
 
 *.ssz
+
+# IntelliJ
+.idea
+.ijwb
+
+eth2-testnet-genesis
+migrate_bin.sh
