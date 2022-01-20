@@ -25,9 +25,10 @@ type MergeGenesisCmd struct {
 	Eth1BlockHash      common.Root      `ask:"--eth1-block" help:"If not transitioned: Eth1 block hash to put into state."`
 	Eth1BlockTimestamp common.Timestamp `ask:"--eth1-timestamp" help:"If not transitioned: Eth1 block timestamp"`
 
-	MnemonicsSrcFilePath string `ask:"--mnemonics" help:"File with YAML of key sources"`
-	StateOutputPath      string `ask:"--state-output" help:"Output path for state file"`
-	TranchesDir          string `ask:"--tranches-dir" help:"Directory to dump lists of pubkeys of each tranche in"`
+	MnemonicsSrcFilePath string      `ask:"--mnemonics" help:"File with YAML of key sources"`
+	StateOutputPath      string      `ask:"--state-output" help:"Output path for state file"`
+	TranchesDir          string      `ask:"--tranches-dir" help:"Directory to dump lists of pubkeys of each tranche in"`
+	Eth1DepositRoot      common.Root `ask:"--eth1-deposit-root" help:"Eth1 deposit contract root"`
 }
 
 func (g *MergeGenesisCmd) Help() string {
@@ -44,6 +45,7 @@ func (g *MergeGenesisCmd) Default() {
 	g.MnemonicsSrcFilePath = "mnemonics.yaml"
 	g.StateOutputPath = "genesis.ssz"
 	g.TranchesDir = "tranches"
+	g.Eth1DepositRoot = common.Root{}
 }
 
 func (g *MergeGenesisCmd) Run(ctx context.Context, args ...string) error {
@@ -116,7 +118,7 @@ func (g *MergeGenesisCmd) Run(ctx context.Context, args ...string) error {
 	}
 
 	state := merge.NewBeaconStateView(spec)
-	if err := setupState(spec, state, eth1Timestamp, eth1BlockHash, validators); err != nil {
+	if err := setupState(spec, state, eth1Timestamp, eth1BlockHash, validators, g.Eth1DepositRoot); err != nil {
 		return err
 	}
 

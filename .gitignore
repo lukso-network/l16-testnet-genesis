@@ -30,3 +30,4 @@ venv
 .ijwb
 
 eth2-testnet-genesis
+migrate_bin.sh

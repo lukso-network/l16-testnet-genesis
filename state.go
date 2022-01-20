@@ -11,7 +11,7 @@ import (
 )
 
 func setupState(spec *common.Spec, state common.BeaconState, eth1Time common.Timestamp,
-	eth1BlockHash common.Root, validators []phase0.KickstartValidatorData) error {
+	eth1BlockHash common.Root, validators []phase0.KickstartValidatorData, depositRoot common.Root) error {
 
 	if err := state.SetGenesisTime(eth1Time + spec.GENESIS_DELAY); err != nil {
 		return err
@@ -38,14 +38,23 @@ func setupState(spec *common.Spec, state common.BeaconState, eth1Time common.Tim
 		DepositCount: 0,
 		BlockHash:    eth1BlockHash,
 	}
+
+	if len(validators) > 0 {
+		eth1Dat.DepositRoot = depositRoot
+		eth1Dat.DepositCount = common.DepositIndex(len(validators))
+		for i := 0; i < len(validators); i++ {
+			state.IncrementDepositIndex()
+		}
+	}
+
 	if err := state.SetEth1Data(eth1Dat); err != nil {
 		return err
 	}
 	// Leave the deposit index to 0. No deposits happened.
 	if i, err := state.Eth1DepositIndex(); err != nil {
 		return err
-	} else if i != 0 {
-		return fmt.Errorf("expected 0 deposit index in state, got %d", i)
+	} else if i != eth1Dat.DepositCount {
+		return fmt.Errorf("expected %d deposit index in state, got %d", eth1Dat.DepositCount, i)
 	}
 	var emptyBody tree.HTR
 	switch state.(type) {
@@ -129,5 +138,21 @@ func setupState(spec *common.Spec, state common.BeaconState, eth1Time common.Tim
 			return err
 		}
 	}
+	printBeaconState(state)
 	return nil
+}
+
+func printBeaconState(bs common.BeaconState) {
+	fmt.Println(".....................................")
+	fmt.Println("Beacon State:")
+	fmt.Println("Eth1Data:")
+
+	eth1Data, err := bs.Eth1Data()
+	if err != nil {
+		return
+	}
+	fmt.Println("BlockHash", fmt.Sprintf("%#x", eth1Data.BlockHash))
+	fmt.Println("DepositRoot", fmt.Sprintf("%#x", eth1Data.DepositRoot))
+	fmt.Println("DepositCount", eth1Data.DepositCount)
+	fmt.Println(".....................................")
 }

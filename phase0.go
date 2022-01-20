@@ -20,6 +20,7 @@ type Phase0GenesisCmd struct {
 	MnemonicsSrcFilePath string           `ask:"--mnemonics" help:"File with YAML of key sources"`
 	StateOutputPath      string           `ask:"--state-output" help:"Output path for state file"`
 	TranchesDir          string           `ask:"--tranches-dir" help:"Directory to dump lists of pubkeys of each tranche in"`
+	Eth1DepositRoot      common.Root      `ask:"--eth1-deposit-root" help:"Eth1 deposit contract root"`
 }
 
 func (g *Phase0GenesisCmd) Help() string {
@@ -33,6 +34,7 @@ func (g *Phase0GenesisCmd) Default() {
 	g.MnemonicsSrcFilePath = "mnemonics.yaml"
 	g.StateOutputPath = "genesis.ssz"
 	g.TranchesDir = "tranches"
+	g.Eth1DepositRoot = common.Root{}
 }
 
 func (g *Phase0GenesisCmd) Run(ctx context.Context, args ...string) error {
@@ -56,7 +58,7 @@ func (g *Phase0GenesisCmd) Run(ctx context.Context, args ...string) error {
 	}
 
 	state := phase0.NewBeaconStateView(spec)
-	if err := setupState(spec, state, g.Eth1BlockTimestamp, g.Eth1BlockHash, validators); err != nil {
+	if err := setupState(spec, state, g.Eth1BlockTimestamp, g.Eth1BlockHash, validators, g.Eth1DepositRoot); err != nil {
 		return err
 	}
 
