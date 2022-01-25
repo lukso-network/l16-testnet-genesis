@@ -25,3 +25,4 @@ venv
 
 *.ssz
 .idea
+eth2-testnet-genesis
