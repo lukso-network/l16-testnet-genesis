@@ -10,6 +10,7 @@ import (
 	"github.com/protolambda/zrnt/eth2"
 	"github.com/protolambda/zrnt/eth2/beacon/common"
 	"github.com/protolambda/zrnt/eth2/beacon/merge"
+	"github.com/protolambda/zrnt/eth2/beacon/phase0"
 	"github.com/protolambda/zrnt/eth2/configs"
 	"github.com/protolambda/ztyp/codec"
 	"github.com/protolambda/ztyp/tree"
@@ -28,6 +29,7 @@ type MergeGenesisCmd struct {
 	MnemonicsSrcFilePath string `ask:"--mnemonics" help:"File with YAML of key sources"`
 	StateOutputPath      string `ask:"--state-output" help:"Output path for state file"`
 	TranchesDir          string `ask:"--tranches-dir" help:"Directory to dump lists of pubkeys of each tranche in"`
+	l16                  bool   `ask:"--l16" help:"Prepare genesis ssz for l16"`
 }
 
 func (g *MergeGenesisCmd) Help() string {
@@ -44,6 +46,7 @@ func (g *MergeGenesisCmd) Default() {
 	g.MnemonicsSrcFilePath = "mnemonics.yaml"
 	g.StateOutputPath = "genesis.ssz"
 	g.TranchesDir = "tranches"
+	g.l16 = false
 }
 
 func (g *MergeGenesisCmd) Run(ctx context.Context, args ...string) error {
@@ -120,6 +123,19 @@ func (g *MergeGenesisCmd) Run(ctx context.Context, args ...string) error {
 		return err
 	}
 
+	if g.l16 {
+		emptyBody := phase0.BeaconBlockBodyType(configs.Mainnet).New()
+		latestHeader := &common.BeaconBlockHeader{
+			BodyRoot: emptyBody.HashTreeRoot(tree.GetHashFn()),
+		}
+		if err := state.SetLatestBlockHeader(latestHeader); err != nil {
+			return err
+		}
+		if err = state.SetGenesisTime(common.Timestamp(time.Now().Unix()) + common.Timestamp(120)); err != nil {
+			return nil
+		}
+	}
+
 	if err := state.SetLatestExecutionPayloadHeader(execHeader); err != nil {
 		return err
 	}
@@ -142,6 +158,41 @@ func (g *MergeGenesisCmd) Run(ctx context.Context, args ...string) error {
 	if err := state.Serialize(w); err != nil {
 		return err
 	}
+	printBeaconState(state)
 	fmt.Println("done!")
 	return nil
+}
+
+func printBeaconState(bs common.BeaconState) {
+	fmt.Println(".....................Beacon State .........................")
+	fmt.Println("Eth1Data:")
+
+	eth1Data, err := bs.Eth1Data()
+	if err != nil {
+		return
+	}
+	validators, err := bs.Validators()
+	if err != nil {
+		return
+	}
+	genesisTime, err := bs.GenesisTime()
+	if err != nil {
+		return
+	}
+	forkVersion, err := bs.Fork()
+	if err != nil {
+		return
+	}
+
+	validatorCount, err := validators.ValidatorCount()
+	if err != nil {
+		return
+	}
+	fmt.Println("BlockHash", fmt.Sprintf("%#x", eth1Data.BlockHash))
+	fmt.Println("DepositRoot", fmt.Sprintf("%#x", eth1Data.DepositRoot))
+	fmt.Println("validatorCount", validatorCount)
+	fmt.Println("genesisTime", genesisTime)
+	fmt.Println("curForkVersion", forkVersion.CurrentVersion)
+	fmt.Println("prevForkVersion", forkVersion.PreviousVersion)
+	fmt.Println(".....................................")
 }
